@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<title>Cuadro Resumen</title>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, initial-scale=1">
+		<link rel="stylesheet" type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css">
+		<script src="https://js.arcgis.com/3.32/"></script>
+		<style type="text/css">
+		body {
+		padding-top: 110px;
+		}
+		/*.navbar {
+		height: 50px;
+		padding: 0 15px;
+		width: 100%;
+		position: fixed;
+		top: 0;
+		z-index: 1;
+		}*/
+		/*.navbar a {
+		color: white;
+		line-height: 3em;
+		}
+		*/
+		.table-area {
+		position: relative;
+		z-index: 0;
+		/*margin-top: 50px;*/
+		}
+		table.responsive-table {
+		display: table;
+		/* required for table-layout to be used (not normally necessary; included for completeness) */
+		table-layout: fixed;
+		/* this keeps your columns with fixed with exactly the right width */
+		width: 100%;
+		/* table must have width set for fixed layout to work as expected */
+		height: 100%;
+		}
+		table.responsive-table thead {
+		position: fixed;
+		top: 0px;
+		left: 0;
+		right: 0;
+		width: 100%;
+		/*height: 50px;*/
+		line-height: 3em;
+		background: #333333;
+		table-layout: fixed;
+		display: table;
+		color: white;
+		}
+		table.responsive-table tbody{
+		/*top: 200px;*/
+		}
+		table.responsive-table th {
+		/*background: #eee;*/
+		}
+		table.responsive-table td {
+		line-height: 2em;
+		}
+		table.responsive-table thead th{
+		text-align: center;
+		}
+		table.responsive-table tr > td,
+		table.responsive-table th {
+		/*text-align: left;*/
+		}
+		</style>
+		<script>
+			require([
+				"esri/tasks/QueryTask",
+				"esri/tasks/query",
+				"esri/tasks/StatisticDefinition",
+				'dijit/_WidgetsInTemplateMixin',
+				'dojox/grid/DataGrid',
+				'dojo/domReady!'
+				], function(
+					QueryTask,
+					Query,
+					StatisticDefinition,
+					_WidgetsInTemplateMixin,
+					DataGrid)
+				{
+					var layerUrl = "https://dportalgis.vivienda.gob.pe/dfdserver/rest/services/OGEI/proyectos_decreto_urgencia_monitoreo/MapServer/0/query/";
+					var queryTask = new QueryTask(layerUrl);
+					var _PROGRAMA = "programa";
+					var _PROPUTRANSF = "proputransf";
+					var _DEPARTAMENTO = "departamento";
+					var _VICEMINISTERIO = "viceministerio";
+					var _VMCS = "VMCS";
+					var _VMVU = "VMVU";
+					var _PNSR = "PNSR";
+					var _PNSU = "PNSU";
+					var _PMIB = "PMIB";
+					var _MONTO = "monto"
+					var _PROYECTOS = "proyectos"
+					var statisticDefinitionProyectos = new StatisticDefinition();
+					statisticDefinitionProyectos.statisticType = "count";
+					statisticDefinitionProyectos.onStatisticField = _PROGRAMA;
+					statisticDefinitionProyectos.outStatisticFieldName = _PROYECTOS;
+					var statisticDefinitionMonto = new StatisticDefinition();
+					statisticDefinitionMonto.statisticType = "sum";
+					statisticDefinitionMonto.onStatisticField = _PROPUTRANSF;
+					statisticDefinitionMonto.outStatisticFieldName = _MONTO;
+					function addrowToTable(row, dep){
+						console.log(row.attributes)
+					};
+					function queryTaskExecuteCompleteHandler(queryResults){
+					var features_response = queryResults.featureSet.features;
+					var features = features_response.map((row) => row["attributes"]);
+					var dep_tmp = features.map((row) => row[_DEPARTAMENTO]);
+					var dep_set = new Set(dep_tmp)
+					var dep = Array.from(dep_set);
+					var registros = '';
+					for(var i in dep){
+						var vmcs_pnsu_proy_td = `<td>0</td>`
+						var vmcs_pnsu_monto_td = `<td>0</td>`
+						var vmcs_pnsr_proy_td = `<td>0</td>`
+						var vmcs_pnsr_monto_td = `<td>0</td>`
+						var vmvu_pmib_proy_td = `<td>0</td>`
+						var vmvu_pmib_monto_td = `<td>0</td>`
+						var vmvu_pmib_ioar_td = `<td>0</td>`
+						var vmvu_pmib_ioar_monto_td = `<td>0</td>`
+						var cells = features.filter((row) => row[_DEPARTAMENTO] == dep[i])
+						departamento_th = `<th>${dep[i]}</th>`
+					for(var r in cells){
+						var cell = cells[r]
+						if(cell[_VICEMINISTERIO] == _VMCS && cell[_PROGRAMA] == _PNSU){
+							vmcs_pnsu_proy_td = `<td>${cell[_PROYECTOS]}</td>`;
+							vmcs_pnsu_monto_td = `<td>${cell[_MONTO]}</td>`;
+						}else if(cell[_VICEMINISTERIO] == _VMCS && cell[_PROGRAMA] == _PNSR){
+							vmcs_pnsr_proy_td = `<td>${cell[_PROYECTOS]}</td>`
+							vmcs_pnsr_monto_td = `<td>${cell[_MONTO]}</td>`
+						}else if(cell[_VICEMINISTERIO] == _VMVU && cell[_PROGRAMA] == _PMIB){
+							vmvu_pmib_proy_td = `<td>${cell[_PROYECTOS]}</td>`
+							vmvu_pmib_monto_td = `<td>${cell[_MONTO]}</td>`
+						}
+					}
+				registros = registros + "<tr>" + departamento_th + vmcs_pnsu_proy_td + vmcs_pnsu_monto_td + vmcs_pnsr_proy_td + vmcs_pnsr_monto_td + vmvu_pmib_proy_td + vmvu_pmib_monto_td + vmvu_pmib_ioar_td + vmvu_pmib_ioar_monto_td + "</tr>"
+		}
+		var parenttbl = document.getElementById("rowdata");
+		parenttbl.innerHTML = registros
+		};
+		function queryTaskErrorHandler(queryError){
+		console.log("error", queryError.error.details);
+		};
+		var query = new Query();
+		query.returnGeometry = false;
+		query.groupByFieldsForStatistics = [_DEPARTAMENTO, _VICEMINISTERIO, _PROGRAMA];
+		query.outStatistics = [statisticDefinitionProyectos, statisticDefinitionMonto];
+		queryTask.on("complete", queryTaskExecuteCompleteHandler);
+		queryTask.on("error", queryTaskErrorHandler);
+		queryTask.execute(query);
+	});
+</script>
+</head>
+<body>
+<!-- <nav class="navbar navbar-inverse navbar-fixed-top">
+	<a href="">Insert Brand / Logo</a>
+</nav> -->
+<section class="content-area">
+	<div class="table-area">
+		<table class="responsive-table table table-hover">
+			<thead>
+				<tr>
+					<th rowspan="3">Región</th>
+					<th colspan="4">VMCS</th>
+					<th colspan="4">VMVU</th>
+				</tr>
+				<tr>
+					<th colspan="2">PNSU</th>
+					<th colspan="2">PNSR</th>
+					<th colspan="4">PMIB</th>
+				</tr>
+				<tr style="background:#a6dcef; color:#333333;">
+					<th>Proy.</th>
+					<th>Monto s/</th>
+					<th>Proy.</th>
+					<th>Monto s/</th>
+					<th>Proy.</th>
+					<th>Monto s/</th>
+					<th>Proy.</th>
+					<th>Monto s/</th>
+				</tr>
+			</thead>
+			<tbody id="rowdata">
+			</tbody>
+		</table>
+	</div>
+</section>
+</body>
+</html>
